@@ -1,4 +1,5 @@
 <title>For Mou, My Didi</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -382,6 +383,14 @@ h2 {
   aspect-ratio: 3 / 4;
   transform-style: preserve-3d;
   will-change: transform;
+  animation: fanFloat 8s ease-in-out infinite;
+}
+@keyframes fanFloat {
+  0%, 100% { translate: 0 0; }
+  50%      { translate: 0 -8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fan { animation: none; }
 }
 .fan .photo {
   position: absolute;
@@ -1093,15 +1102,20 @@ h2 {
 
 /* ---------- phone ---------- */
 @media (max-width: 640px) {
-  .nav-links { gap: 14px; }
-  .nav-links a { font-size: 0.76rem; }
-  .brand { font-size: 0.95rem; }
-  .hero { padding-top: clamp(6.5rem, 16vh, 8rem); }
-  .fan { width: clamp(150px, 42vw, 200px); }
-  .fan .photo--left { transform: translateX(-52%) rotateY(22deg) rotateZ(-4deg) translateZ(-110px) scale(0.86); }
-  .fan .photo--right { transform: translateX(52%) rotateY(-22deg) rotateZ(4deg) translateZ(-110px) scale(0.86); }
-  .badge { margin-right: 4%; }
-  .rail { --cw: 228px; --ch: 316px; }
+  .nav-links { gap: 16px; }
+  .nav-links a { font-size: 0.82rem; }
+  .brand { font-size: 1rem; }
+  .hero { padding-top: clamp(6.2rem, 14vh, 7.5rem); }
+  .hero-title { font-size: clamp(3rem, 12.5vw, 4.6rem); }
+  .hero-lede { font-size: 1.02rem; }
+  .eyebrow { font-size: 0.7rem; letter-spacing: 0.2em; }
+  .fan { width: clamp(172px, 44vw, 216px); }
+  .fan .photo--left { transform: translateX(-50%) rotateY(24deg) rotateZ(-4deg) translateZ(-110px) scale(0.86); }
+  .fan .photo--right { transform: translateX(50%) rotateY(-24deg) rotateZ(4deg) translateZ(-110px) scale(0.86); }
+  .rail { --cw: clamp(246px, 70vw, 300px); --ch: clamp(348px, 94vw, 420px); }
+  h2 { font-size: clamp(2.5rem, 9vw, 3.4rem); }
+  .caption { font-size: 1.08rem; }
+  .round-btn { width: 50px; height: 50px; }
   .gallery-controls { justify-content: center; }
   .caption-row { flex-basis: 100%; justify-content: center; text-align: center; }
   .letter-foot { gap: 16px; }
@@ -1109,7 +1123,8 @@ h2 {
   .quote::before { background-position: center 22%; }
 }
 @media (max-width: 400px) {
-  .nav-links a:first-child { display: none; }
+  .nav-links { gap: 12px; }
+  .nav-links a { font-size: 0.78rem; }
 }
 </style>
 
@@ -1388,11 +1403,12 @@ h2 {
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
-  /* ---------- hero pointer parallax (fine pointers only) ---------- */
+  /* ---------- hero tilt: cursor on desktop, finger drag on phones ---------- */
   const fan = document.getElementById("fan");
+  const stage = document.querySelector(".stage");
   const finePointer = window.matchMedia("(pointer: fine)").matches;
 
-  if (fan && !reduceMotion && finePointer) {
+  if (fan && !reduceMotion) {
     let targetX = 0, targetY = 0, curX = 0, curY = 0, raf = null;
 
     function tick() {
@@ -1409,13 +1425,30 @@ h2 {
       }
     }
 
-    window.addEventListener("pointermove", (e) => {
-      const nx = (e.clientX / window.innerWidth) * 2 - 1;
-      const ny = (e.clientY / window.innerHeight) * 2 - 1;
-      targetX = nx * 7;
-      targetY = ny * -5;
+    function aim(nx, ny, strength) {
+      targetX = nx * strength;
+      targetY = ny * -strength * 0.72;
       if (!raf) raf = requestAnimationFrame(tick);
-    }, { passive: true });
+    }
+
+    if (finePointer) {
+      window.addEventListener("pointermove", function (e) {
+        aim((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1, 7);
+      }, { passive: true });
+    } else if (stage) {
+      stage.addEventListener("touchmove", function (e) {
+        const touch = e.touches[0];
+        if (!touch) return;
+        const box = stage.getBoundingClientRect();
+        const nx = ((touch.clientX - box.left) / box.width) * 2 - 1;
+        const ny = ((touch.clientY - box.top) / box.height) * 2 - 1;
+        aim(nx, ny, 13);
+      }, { passive: true });
+
+      const relax = function () { aim(0, 0, 13); };
+      stage.addEventListener("touchend", relax, { passive: true });
+      stage.addEventListener("touchcancel", relax, { passive: true });
+    }
   }
 
   /* ---------- gallery coverflow ---------- */
